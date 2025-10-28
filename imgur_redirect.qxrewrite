@@ -1,22 +1,30 @@
-#!name=Imgur → images.weserv.nl (extended)
-#!desc=将 i.imgur.com 的图片请求（包括路径中包含 i.imgur.com 的第三方域名）重定向到 images.weserv.nl，并移除代理请求的 Referer。
+#!name=Imgur → images.weserv.nl (safe, extended)
+#!desc=将 i.imgur.com 的图片请求（包括路径中包含 i.imgur.com 的第三方域名）重定向到 images.weserv.nl，并避免循环重定向与移除代理请求的 Referer。
 #!author=huqi
 #!icon=https://i.imgur.com/hlN7pjl.png
 #!date=2025-10-28
 #!category=Rewrite
 
 [rewrite_local]
+# --- 先排除：如果已经是 images.weserv.nl 的请求，则不重写（避免循环）
+^https?:\/\/images\.weserv\.nl\/ - reject
+
 # 1) 直接的 i.imgur.com 主机（常见情况）
 ^https?:\/\/i\.imgur\.com\/(.*) url 302 https://images.weserv.nl/?url=https://i.imgur.com/$1
 
-# 2) 路径中包含 i.imgur.com 的第三方域名
-#    例如: https://forum.javcdn.cc/i.imgur.com/ZqT2pTP.jpeg
-#    捕获路径中的 "i.imgur.com/..." 部分并把它作为目标 URL
-^https?:\/\/[^\/]+\/(i\.imgur\.com\/(.*)) url 302 https://images.weserv.nl/?url=https://$1
+# 2) 路径中包含 i.imgur.com 的第三方域名（例如 forum.javcdn.cc/i.imgur.com/xxx）
+#    使用负向前缀，确保不是目标代理或 imgur 本身，避免把已经重写或代理的请求再次捕获。
+#    使用 (?!images\.weserv\.nl|i\.imgur\.com) 来避免匹配到代理或 imgur 自身（Quantumult X 支持 PCRE）
+^https?:\/\/(?!images\.weserv\.nl|i\.imgur\.com)[^\/]+\/i\.imgur\.com\/(.*) url 302 https://images.weserv.nl/?url=https://i.imgur.com/$1
+
+# 备注：上面第2条把第三方域名路径中的 i.imgur.com/xxx 捕获为 $1（只保留后缀部分），并构造到 images.weserv.nl。
+# 如果你的 Quantumult X 版本不支持负向前缀(?!...)，请把第2条改为下面的“更保守”写法（限制到特定第三方域名）：
+# ^https?:\/\/forum\.javcdn\.cc\/i\.imgur\.com\/(.*) url 302 https://images.weserv.nl/?url=https://i.imgur.com/$1
 
 # 移除发往 images.weserv.nl 的 Referer 请求头（避免个别源站或代理拒绝）
 ^https?:\/\/images\.weserv\.nl\/ request-header ^Referer:.+?(\r\n)?$ drop
 
 [mitm]
-# 用到的域名需在 MitM 中启用以便修改 HTTPS 请求头与重写
+# 用到的域名需在 MitM 中启用 (HTTPS 解密)
+# 把你常见会嵌套 imgur 的第三方域名也加进来，例如 forum.javcdn.cc
 hostname = i.imgur.com, images.weserv.nl, forum.javcdn.cc
