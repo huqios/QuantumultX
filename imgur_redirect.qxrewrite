@@ -1,44 +1,9 @@
-#!name=Imgur → WordPress CDN (i0.wp.com)
-#!desc=将 imgur 图片重定向到 i0.wp.com (仅支持 s.imgur.com 格式)
-#!author=huqi
-#!icon=https://i.imgur.com/hlN7pjl.png
-#!date=2025-10-28
-
-[rewrite_remote]
-# 如需远程引用，请将此文件上传后在此处填写 URL
+[mitm]
+hostname = i.imgur.com, img.noobzone.ru
 
 [rewrite_local]
-# ==================== 防循环核心规则 ====================
-# 阻止 WordPress CDN 自身的请求被重定向
-^https?:\/\/i[0-9]\.wp\.com\/ url reject
+# 1. 将 i.imgur.com 的图片链接重定向到代理服务器
+^https?://i\.imgur\.com/(.*) url 307 https://img.noobzone.ru/getimg.php?url=https://i.imgur.com/$1
 
-# ==================== 主重定向规则 ====================
-
-# 规则 1: i.imgur.com → s.imgur.com → i0.wp.com
-# 示例: https://i.imgur.com/ZqT2pTP.jpeg
-# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
-^https?:\/\/i\.imgur\.com\/(.+)$ url 302 https://i0.wp.com/s.imgur.com/$1
-
-# 规则 2: s.imgur.com → i0.wp.com (直接代理)
-# 示例: https://s.imgur.com/ZqT2pTP.jpeg
-# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
-^https?:\/\/(s\.imgur\.com\/.+)$ url 302 https://i0.wp.com/$1
-
-# 规则 3: imgur.com 主域名图片 → s.imgur.com
-# 示例: https://imgur.com/ZqT2pTP.jpeg
-# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
-^https?:\/\/(?:www\.)?imgur\.com\/([^\/]+\.(jpg|jpeg|png|gif|webp|bmp)(?:\?.*)?)$ url 302 https://i0.wp.com/s.imgur.com/$1
-
-# 规则 4: 第三方网站嵌入的 i.imgur.com 路径
-# 示例: https://example.com/i.imgur.com/ZqT2pTP.jpeg
-# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
-^https?:\/\/(?!i[0-9]\.wp\.com)[^\/]+\/i\.imgur\.com\/(.+)$ url 302 https://i0.wp.com/s.imgur.com/$1
-
-# 规则 5: 第三方嵌入的 s.imgur.com (保持原样)
-# 示例: https://example.com/s.imgur.com/ZqT2pTP.jpeg
-# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
-^https?:\/\/(?!i[0-9]\.wp\.com)[^\/]+\/(s\.imgur\.com\/.+)$ url 302 https://i0.wp.com/$1
-
-[mitm]
-# HTTPS 解密所需域名（在 Quantumult X 设置中启用 MitM 并添加这些域名）
-hostname = i.imgur.com, s.imgur.com, imgur.com, i0.wp.com, i1.wp.com, i2.wp.com
+# 2. 移除代理服务器请求中的 Referer 头，防止盗链
+^https?://img\.noobzone\.ru/.* request-header Referer:
