@@ -1,16 +1,16 @@
-#!name=Imgur Redirect & Header Cleaner
-#!desc=将 i.imgur.com 的图片请求重定向到 img.noobzone.ru，并移除 noobzone 请求头 Referer。
+#!name=Imgur → DuckDuckGo Proxy
+#!desc=将 i.imgur.com 的图片请求重定向到 proxy.duckduckgo.com 并移除代理请求的 Referer。
 #!author=huqi
 #!icon=https://i.imgur.com/hlN7pjl.png
 #!date=2025-10-28
 #!category=Rewrite
 
 [rewrite_local]
-# imgur 图片重定向
-^https?:\/\/i\.imgur\.com\/(.*) url 302 https://img.noobzone.ru/getimg.php?url=https://i.imgur.com/$1
+# i.imgur.com 图片重定向到 DuckDuckGo 代理
+^https?:\/\/i\.imgur\.com\/(.*) url 302 https://proxy.duckduckgo.com/iu/?u=https://i.imgur.com/$1
 
-# 移除 noobzone 请求头 Referer
-^https?:\/\/img\.noobzone\.ru\/ request-header ^Referer:.+?(\r\n)?$ drop
+# 移除发往 DuckDuckGo 代理的 Referer 请求头（避免部分服务拒绝）
+^https?:\/\/proxy\.duckduckgo\.com\/ request-header ^Referer:.+?(\r\n)?$ drop
 
 [mitm]
-hostname = i.imgur.com, img.noobzone.ru
+hostname = i.imgur.com, proxy.duckduckgo.com
