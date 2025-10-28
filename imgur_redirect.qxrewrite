@@ -1,24 +1,27 @@
-#!name=Imgur → images.weserv.nl (loop-safe)
-#!desc=将 i.imgur.com 图片请求重定向到 images.weserv.nl，无无限重定向，避免循环。
+#!name=Imgur → images.weserv.nl (优化版)
+#!desc=将 i.imgur.com 图片请求重定向到 images.weserv.nl，防循环，支持嵌入路径
 #!author=huqi
 #!icon=https://i.imgur.com/hlN7pjl.png
 #!date=2025-10-28
 #!category=Rewrite
 
 [rewrite_local]
-# ---- 排除 images.weserv.nl 自身的所有请求，防止循环
-^https?:\/\/images\.weserv\.nl\/ - reject-dict
+# ---- 核心：排除 images.weserv.nl 自身请求，防止循环
+^https?:\/\/images\.weserv\.nl\/ - reject
 
-# ---- 仅重定向 i.imgur.com 图片请求
-^https?:\/\/i\.imgur\.com\/(.*) url 302 https://images.weserv.nl/?url=i.imgur.com/$1
+# ---- 重定向规则 1：直接的 i.imgur.com 请求
+# 匹配: https://i.imgur.com/abc123.jpg
+# 转换: https://images.weserv.nl/?url=i.imgur.com/abc123.jpg
+^https?:\/\/i\.imgur\.com\/(.+)$ https://images.weserv.nl/?url=i.imgur.com/$1 302
 
-# ---- 支持第三方域名中嵌入的 i.imgur.com 图片路径
-# 例如 forum.javcdn.cc/i.imgur.com/xxxx.jpg → images.weserv.nl/?url=i.imgur.com/xxxx.jpg
-^https?:\/\/[^\/]+\/i\.imgur\.com\/(.*) url 302 https://images.weserv.nl/?url=i.imgur.com/$1
+# ---- 重定向规则 2：第三方域名嵌入的 i.imgur.com 路径
+# 匹配: https://forum.javcdn.cc/i.imgur.com/abc123.jpg
+# 转换: https://images.weserv.nl/?url=i.imgur.com/abc123.jpg
+^https?:\/\/(?!images\.weserv\.nl)[^\/]+\/i\.imgur\.com\/(.+)$ https://images.weserv.nl/?url=i.imgur.com/$1 302
 
-# ---- 移除发往 images.weserv.nl 的 Referer 头（防止403或请求异常）
-^https?:\/\/images\.weserv\.nl\/ request-header ^Referer:.+?(\r\n)?$ drop
+# ---- 修改请求头：移除 Referer 防止 403 错误
+^https?:\/\/images\.weserv\.nl\/.* header-del Referer
 
 [mitm]
-# 这些域名需要开启HTTPS解密
-hostname = i.imgur.com, forum.javcdn.cc, images.weserv.nl
+# HTTPS 解密所需域名
+hostname = i.imgur.com, images.weserv.nl, forum.javcdn.cc
