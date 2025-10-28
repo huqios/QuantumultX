@@ -1,9 +1,10 @@
 [mitm]
-hostname = i.imgur.com, img.noobzone.ru
+# 两个域名都需要加入，因为一个要重写，一个要修改请求头
+hostname = i.imgur.com, cdn.cdnjson.com
 
 [rewrite_local]
-# 1. 将 i.imgur.com 的图片链接重定向到代理服务器
-^https?://i\.imgur\.com/(.*) url 307 https://img.noobzone.ru/getimg.php?url=https://i.imgur.com/$1
+# 1. 将 i.imgur.com 的请求重定向到 cdn.cdnjson.com 代理
+^https?://(i\.imgur\.com/.*) url 307 https://cdn.cdnjson.com/$1
 
-# 2. 移除代理服务器请求中的 Referer 头，防止盗链
-^https?://img\.noobzone\.ru/.* request-header Referer:
+# 2. (可选但推荐) 移除代理服务器请求中的 Referer 头，防止盗链
+^https?://cdn\.cdnjson\.com/.* request-header Referer:
