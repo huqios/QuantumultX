@@ -1,27 +1,44 @@
-#!name=Imgur → images.weserv.nl (优化版)
-#!desc=将 i.imgur.com 图片请求重定向到 images.weserv.nl，防循环，支持嵌入路径
+#!name=Imgur → WordPress CDN (i0.wp.com)
+#!desc=将 imgur 图片重定向到 i0.wp.com (仅支持 s.imgur.com 格式)
 #!author=huqi
 #!icon=https://i.imgur.com/hlN7pjl.png
 #!date=2025-10-28
-#!category=Rewrite
+
+[rewrite_remote]
+# 如需远程引用，请将此文件上传后在此处填写 URL
 
 [rewrite_local]
-# ---- 核心：排除 images.weserv.nl 自身请求，防止循环
-^https?:\/\/images\.weserv\.nl\/ - reject
+# ==================== 防循环核心规则 ====================
+# 阻止 WordPress CDN 自身的请求被重定向
+^https?:\/\/i[0-9]\.wp\.com\/ url reject
 
-# ---- 重定向规则 1：直接的 i.imgur.com 请求
-# 匹配: https://i.imgur.com/abc123.jpg
-# 转换: https://images.weserv.nl/?url=i.imgur.com/abc123.jpg
-^https?:\/\/i\.imgur\.com\/(.+)$ https://images.weserv.nl/?url=i.imgur.com/$1 302
+# ==================== 主重定向规则 ====================
 
-# ---- 重定向规则 2：第三方域名嵌入的 i.imgur.com 路径
-# 匹配: https://forum.javcdn.cc/i.imgur.com/abc123.jpg
-# 转换: https://images.weserv.nl/?url=i.imgur.com/abc123.jpg
-^https?:\/\/(?!images\.weserv\.nl)[^\/]+\/i\.imgur\.com\/(.+)$ https://images.weserv.nl/?url=i.imgur.com/$1 302
+# 规则 1: i.imgur.com → s.imgur.com → i0.wp.com
+# 示例: https://i.imgur.com/ZqT2pTP.jpeg
+# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
+^https?:\/\/i\.imgur\.com\/(.+)$ url 302 https://i0.wp.com/s.imgur.com/$1
 
-# ---- 修改请求头：移除 Referer 防止 403 错误
-^https?:\/\/images\.weserv\.nl\/.* header-del Referer
+# 规则 2: s.imgur.com → i0.wp.com (直接代理)
+# 示例: https://s.imgur.com/ZqT2pTP.jpeg
+# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
+^https?:\/\/(s\.imgur\.com\/.+)$ url 302 https://i0.wp.com/$1
+
+# 规则 3: imgur.com 主域名图片 → s.imgur.com
+# 示例: https://imgur.com/ZqT2pTP.jpeg
+# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
+^https?:\/\/(?:www\.)?imgur\.com\/([^\/]+\.(jpg|jpeg|png|gif|webp|bmp)(?:\?.*)?)$ url 302 https://i0.wp.com/s.imgur.com/$1
+
+# 规则 4: 第三方网站嵌入的 i.imgur.com 路径
+# 示例: https://example.com/i.imgur.com/ZqT2pTP.jpeg
+# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
+^https?:\/\/(?!i[0-9]\.wp\.com)[^\/]+\/i\.imgur\.com\/(.+)$ url 302 https://i0.wp.com/s.imgur.com/$1
+
+# 规则 5: 第三方嵌入的 s.imgur.com (保持原样)
+# 示例: https://example.com/s.imgur.com/ZqT2pTP.jpeg
+# 转换: https://i0.wp.com/s.imgur.com/ZqT2pTP.jpeg
+^https?:\/\/(?!i[0-9]\.wp\.com)[^\/]+\/(s\.imgur\.com\/.+)$ url 302 https://i0.wp.com/$1
 
 [mitm]
-# HTTPS 解密所需域名
-hostname = i.imgur.com, images.weserv.nl, forum.javcdn.cc
+# HTTPS 解密所需域名（在 Quantumult X 设置中启用 MitM 并添加这些域名）
+hostname = i.imgur.com, s.imgur.com, imgur.com, i0.wp.com, i1.wp.com, i2.wp.com
