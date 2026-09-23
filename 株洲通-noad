@@ -1,13 +1,20 @@
 /**
  * 株洲通 App 去广告与留白美化脚本 (Quantumult X)
+ * 仓库地址: https://github.com/huqios/QuantumultX
+ * 
+ * 功能:
+ * 1. 顶部轮播 Banner (type=0): 注入绿色公交官方宣传图，填充顶部白框
+ * 2. 中部腰封 Banner (type=1): 注入官方公益/绿色出行横幅，填充中部白框
+ * 3. 弹窗广告 (type=2): 彻底置空，避免弹窗打扰
  */
+
 const url = $request.url;
 let body = $response.body;
 
 if (url.includes("getAdvertisements")) {
     try {
         if (url.includes("type=0")) {
-            // 顶部轮播：注入一张纯净的绿色出行背景图，填充白框，消除尴尬留白
+            // 顶部轮播 Banner：注入绿色公交官方宣传图，填充顶部白框
             body = JSON.stringify([
                 {
                     "DESCRIPTION": "绿色出行，低碳环保",
@@ -15,12 +22,23 @@ if (url.includes("getAdvertisements")) {
                     "LINK": "",
                     "TITLE": "株洲公交",
                     "ID": 999,
-                    // 此处可填任意您喜欢的精美横幅图或极简纯色插画地址
-                    "URL": "upload/images/defcd7b42a47470e9de9b65933e999b8.jpg" 
+                    "URL": "upload/images/defcd7b42a47470e9de9b65933e999b8.jpg"
                 }
             ]);
         } else if (url.includes("type=1")) {
-            // 中间腰封：保持清空（或同样放置便民提醒）
+            // 中部腰封 Banner：注入官方公益/绿色出行横幅，填充中部白框
+            body = JSON.stringify([
+                {
+                    "DESCRIPTION": "绿色出行",
+                    "SORT": 1,
+                    "LINK": "",
+                    "TITLE": "公益宣传",
+                    "ID": 998,
+                    "URL": "upload/images/2ecd73b4e7c646e08305766187362d2d.jpg"
+                }
+            ]);
+        } else if (url.includes("type=2")) {
+            // 弹窗广告：彻底置空拦截
             body = "[]";
         }
     } catch (e) {
