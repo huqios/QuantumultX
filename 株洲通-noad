@@ -1,0 +1,31 @@
+/**
+ * 株洲通 App 去广告与留白美化脚本 (Quantumult X)
+ */
+const url = $request.url;
+let body = $response.body;
+
+if (url.includes("getAdvertisements")) {
+    try {
+        if (url.includes("type=0")) {
+            // 顶部轮播：注入一张纯净的绿色出行背景图，填充白框，消除尴尬留白
+            body = JSON.stringify([
+                {
+                    "DESCRIPTION": "绿色出行，低碳环保",
+                    "SORT": 1,
+                    "LINK": "",
+                    "TITLE": "株洲公交",
+                    "ID": 999,
+                    // 此处可填任意您喜欢的精美横幅图或极简纯色插画地址
+                    "URL": "upload/images/defcd7b42a47470e9de9b65933e999b8.jpg" 
+                }
+            ]);
+        } else if (url.includes("type=1")) {
+            // 中间腰封：保持清空（或同样放置便民提醒）
+            body = "[]";
+        }
+    } catch (e) {
+        body = "[]";
+    }
+}
+
+$done({ body });
